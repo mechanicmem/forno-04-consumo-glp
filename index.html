@@ -17,12 +17,12 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start mb-6 border-b border-gray-100 pb-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">Secagem 134-FR-004 | Prjeção de Nível de GLP</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Secagem 134-FR-004 | Projeção de Nível de GLP</h1>
                  <p class="text-gray-500 text-sm mt-1">
                     Projeção Contínua de Nível Tanque GLP (3x4.000kg = 12.000kg)
                 </p>
                 <p class="text-gray-500 text-sm mt-1">
-                    Dados atualizados até 28/11 15:00. Inclinação variável conforme temperatura.
+                    Dados atualizados até <span class="font-bold text-blue-600">29/11 14:00</span>.
                 </p>
             </div>
             
@@ -204,7 +204,7 @@
         let currentUnit = 'pct';
         let myChart = null;
         
-        // Dados Iniciais (Atualizados)
+        // Dados Iniciais (Atualizados com a nova coluna)
         let rawData = [
             { time: '2025-11-26T19:00', tq1: 33, tq2: 30, tq3: 40, isRefill: false }, 
             { time: '2025-11-26T22:00', tq1: 32, tq2: 29, tq3: 38, isRefill: false }, 
@@ -214,7 +214,9 @@
             { time: '2025-11-27T16:00', tq1: 64, tq2: 64, tq3: 78, isRefill: false },
             { time: '2025-11-28T03:00', tq1: 56, tq2: 54, tq3: 67, isRefill: false },
             { time: '2025-11-28T09:00', tq1: 85, tq2: 85, tq3: 85, isRefill: true },
-            { time: '2025-11-28T15:00', tq1: 76, tq2: 80, tq3: 85, isRefill: false }
+            { time: '2025-11-28T15:00', tq1: 76, tq2: 80, tq3: 85, isRefill: false },
+            // NOVO DADO
+            { time: '2025-11-29T14:00', tq1: 56, tq2: 52, tq3: 80, isRefill: false }
         ];
 
         let realHistory = [];
@@ -421,7 +423,8 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const text = val + "%";
+            const pct = Math.round((val - 1) * 100);
+            const text = pct === 0 ? "Normal (100%)" : `${pct > 0 ? "+" : ""}${pct}%`;
             document.getElementById('consumption-display').innerText = text;
             runSimulation();
         });
