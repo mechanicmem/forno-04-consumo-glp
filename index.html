@@ -3,22 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Balanço de Massa: Dados Completos</title>
+    <title>Balanço de Massa: Curva Unificada</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 p-4 font-sans text-gray-800">
+<body class="bg-gray-50 p-4 font-sans text-gray-800 flex flex-col min-h-screen">
 
-    <div class="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-lg border border-gray-100 flex-grow w-full">
         
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start mb-6 border-b border-gray-100 pb-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">Simulação: Dados Completos (12.000kg)</h1>
+                <h1 class="text-2xl font-bold text-gray-800">Secagem 134-FR-004 | Prjeção de Nível de GLP</h1>
+                 <p class="text-gray-500 text-sm mt-1">
+                    Projeção Contínua de Nível Tanque GLP (3x4.000kg = 12.000kg)
+                </p>
                 <p class="text-gray-500 text-sm mt-1">
-                    Calibração: Média ponderada de <strong>todas as leituras</strong> (00:00 até 10:00).
+                    Dados atualizados até 28/11 15:00. Inclinação variável conforme temperatura.
                 </p>
             </div>
             
@@ -28,13 +32,29 @@
             </div>
         </div>
 
+        <!-- Painel de Equação -->
+        <div class="mb-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-calculator text-slate-400"></i>
+                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
+                <span>Total(t) = [</span>
+                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
+                <span>+</span>
+                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
+                <span>] ×</span>
+                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
+            </div>
+        </div>
+
         <!-- Controles -->
         <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
             <!-- 1. Abastecimento -->
             <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg flex flex-col gap-2">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-bold text-indigo-900">1. Simular Abastecimento</span>
+                    <span class="text-sm font-bold text-indigo-900"><i class="fas fa-gas-pump mr-1"></i> Planejar Recargas</span>
                     <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
                         <input type="checkbox" id="auto-refill-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300"/>
                         <label for="auto-refill-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
@@ -44,25 +64,29 @@
                     <input type="range" id="refill-interval" min="12" max="120" value="48" step="4" class="w-full h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer">
                     <span id="interval-display" class="text-xs font-bold text-indigo-700 bg-white px-2 py-1 rounded border border-indigo-200">48h</span>
                 </div>
+                <div class="text-[10px] text-indigo-400 mt-1">
+                    *Intervalos a partir da última recarga confirmada
+                </div>
             </div>
 
             <!-- 2. Ajuste de Consumo -->
-            <div class="bg-orange-50 border border-orange-100 p-4 rounded-lg flex flex-col gap-2">
+            <div class="bg-purple-50 border border-purple-100 p-4 rounded-lg flex flex-col gap-2">
                 <div class="flex items-center justify-between mb-1">
-                    <span class="text-sm font-bold text-orange-900">2. Ajuste de Carga</span>
-                    <span id="consumption-display" class="text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200">Normal (100%)</span>
+                    <span class="text-sm font-bold text-purple-900"><i class="fas fa-tachometer-alt mr-1"></i> Fator de Carga Total</span>
+                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">115%</span>
                 </div>
-                <input type="range" id="consumption-factor" min="0.5" max="2.0" value="1.0" step="0.1" class="w-full h-1 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600">
-                <div class="flex justify-between text-[10px] text-orange-600 font-semibold px-1">
-                    <span>-50%</span>
-                    <span>Normal</span>
-                    <span>+100%</span>
+                <!-- Slider de 80% a 150% -->
+                <input type="range" id="consumption-factor" min="80" max="150" value="115" step="5" class="w-full h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                <div class="flex justify-between text-[10px] text-purple-600 font-semibold px-1">
+                    <span>80% (Otimista)</span>
+                    <span>115% (Padrão)</span>
+                    <span>150% (Crítico)</span>
                 </div>
             </div>
 
             <!-- 3. Unidade -->
             <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg flex flex-col justify-center gap-2">
-                <span class="text-sm font-bold text-gray-700">3. Visualização</span>
+                <span class="text-sm font-bold text-gray-700"><i class="fas fa-ruler-vertical mr-1"></i> Unidade</span>
                 <div class="flex bg-gray-200 rounded p-1">
                     <button id="btn-unit-pct" class="flex-1 py-1 px-3 rounded text-sm font-bold shadow bg-white text-indigo-600 transition-all">
                         % Nível
@@ -81,64 +105,92 @@
             .toggle-label { width: 2.5rem; }
         </style>
 
-        <div class="flex flex-col lg:flex-row gap-6">
-            <!-- Gráfico -->
-            <div class="w-full lg:w-3/4 h-[500px] relative">
+        <div class="flex flex-col lg:flex-row gap-6 mb-8">
+            <!-- Gráfico Principal -->
+            <div class="w-full lg:w-3/4 h-[450px] relative border rounded-lg p-2 shadow-sm">
                 <canvas id="mainChart"></canvas>
             </div>
             
-            <!-- Painel Info -->
+            <!-- Painel Info Lateral -->
             <div class="w-full lg:w-1/4 flex flex-col gap-4">
                 
-                <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative overflow-hidden">
-                    <div id="badge-factor" class="absolute top-0 right-0 bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-1 rounded-bl">
-                        +15% MARGEM
-                    </div>
-                    <h3 class="text-gray-500 text-xs font-bold uppercase mb-2">Consumo Instantâneo</h3>
+                <div class="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                    <h3 class="text-orange-900 font-bold mb-2 text-xs uppercase">Monitoramento Atual</h3>
                     <div class="space-y-2">
                         <div class="flex justify-between">
-                            <span class="text-sm text-gray-600">Base (Média):</span>
-                            <span id="base-load" class="font-mono font-bold">--</span>
+                            <span class="text-sm text-orange-800">Fase Atual:</span>
+                            <span id="phase-name" class="text-sm font-bold text-orange-900 text-right">--</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm text-gray-600">Demanda Forno:</span>
-                            <span id="oven-load" class="font-mono font-bold text-orange-600">--</span>
+                        <div class="flex justify-between items-center border-t border-orange-200 pt-2">
+                            <span class="text-xs text-orange-700">Temp Forno:</span>
+                            <span id="oven-temp" class="text-2xl font-bold text-orange-600">--°C</span>
                         </div>
-                        <div class="flex justify-between border-t pt-2">
-                            <span class="text-sm font-bold text-gray-800">Total Aplicado:</span>
-                            <span id="total-load" class="font-mono font-bold text-lg text-indigo-700">--</span>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-orange-700">Taxa Estimada:</span>
+                            <span id="total-load" class="text-lg font-bold text-purple-700">-- kg/h</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-orange-50 p-4 rounded-lg border border-orange-100">
-                    <h3 class="text-orange-900 font-bold mb-2 text-sm">Status Forno</h3>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs text-orange-700">Fase (Simulada):</span>
-                        <span id="phase-name" class="text-xs font-bold text-orange-900 text-right">--</span>
-                    </div>
-                    <div class="flex justify-between items-center mt-1">
-                        <span class="text-xs text-orange-700">Temp:</span>
-                        <span id="oven-temp" class="text-2xl font-bold text-orange-600">--°C</span>
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 p-3 rounded text-xs text-gray-500 space-y-1">
+                <div class="bg-gray-50 p-3 rounded text-xs text-gray-500 space-y-2">
+                    <div class="font-bold text-gray-400 uppercase text-[10px] mb-1">Legenda do Gráfico</div>
                     <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 rounded-full bg-blue-800"></div>
-                        <span>Leituras (Marcadores)</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-0.5 bg-blue-600"></div>
-                        <span>Histórico Linear</span>
+                        <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+                        <span>Histórico Real</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="w-4 h-0.5 bg-indigo-500 border-t border-dashed"></div>
-                        <span>Projeção (Futuro)</span>
+                        <span>Projeção (Consumo Variável)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                        <span>Abastecimento</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-red-50 border border-red-200"></div>
+                        <span>Curva de Temperatura</span>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Tabela de Dados (Rodapé) -->
+        <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm mt-6">
+            <div class="bg-gray-100 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-gray-700 text-sm">Registro de Leituras</h3>
+                    <p class="text-xs text-gray-500">Os deltas de consumo entre leituras normais alimentam o cálculo da Base.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="addRow()" class="text-xs bg-white border border-gray-300 text-gray-700 px-3 py-1 rounded hover:bg-gray-50">+ Leitura</button>
+                    <button onclick="updateModel()" class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 shadow-sm font-bold">Recalcular</button>
+                </div>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 text-xs text-gray-500 uppercase sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Data/Hora</th>
+                            <th class="px-2 py-2 text-center w-24">TQ1 (%)</th>
+                            <th class="px-2 py-2 text-center w-24">TQ2 (%)</th>
+                            <th class="px-2 py-2 text-center w-24">TQ3 (%)</th>
+                            <th class="px-4 py-2 text-right">Total (kg)</th>
+                            <th class="px-2 py-2 text-center w-24 text-green-700" title="É Abastecimento?"><i class="fas fa-gas-pump"></i></th>
+                            <th class="px-2 py-2 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="editable-table-body" class="bg-white divide-y divide-gray-100">
+                        <!-- JS Populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Assinatura -->
+    <div class="text-center py-4 text-xs text-gray-300 font-mono">
+        Henrique Melo
     </div>
 
     <script>
@@ -147,11 +199,28 @@
         const TOTAL_CAPACITY = 12000;
         const SAFETY_LIMIT_PERCENT = 10;
         const REFILL_LEVEL_PERCENT = 85;
-        const SAFETY_MARGIN_FACTOR = 1.15; // 15% Margem Padrão
 
         // --- ESTADO ---
         let currentUnit = 'pct';
         let myChart = null;
+        
+        // Dados Iniciais (Atualizados)
+        let rawData = [
+            { time: '2025-11-26T19:00', tq1: 33, tq2: 30, tq3: 40, isRefill: false }, 
+            { time: '2025-11-26T22:00', tq1: 32, tq2: 29, tq3: 38, isRefill: false }, 
+            { time: '2025-11-27T00:00', tq1: 85, tq2: 85, tq3: 85, isRefill: true }, 
+            { time: '2025-11-27T05:00', tq1: 61, tq2: 75, tq3: 83, isRefill: false },
+            { time: '2025-11-27T10:00', tq1: 61, tq2: 69, tq3: 82, isRefill: false },
+            { time: '2025-11-27T16:00', tq1: 64, tq2: 64, tq3: 78, isRefill: false },
+            { time: '2025-11-28T03:00', tq1: 56, tq2: 54, tq3: 67, isRefill: false },
+            { time: '2025-11-28T09:00', tq1: 85, tq2: 85, tq3: 85, isRefill: true },
+            { time: '2025-11-28T15:00', tq1: 76, tq2: 80, tq3: 85, isRefill: false }
+        ];
+
+        let realHistory = [];
+        let pLastReal = null;
+        let BASE_LOAD_KG_H = 0;
+        let lastRefillTimestamp = null;
 
         // --- TEMPO ---
         const BAKE_START_STR = '2025-11-26T16:00:00';
@@ -159,13 +228,26 @@
         const SIMULATION_DURATION_HOURS = 125; 
         const simEndMs = bakeStartMs + (SIMULATION_DURATION_HOURS * 3600000);
 
-        // --- MODELO ---
+        // --- MODELO FÍSICO COM INTERPOLAÇÃO ---
+        const ovenConsPoints = [
+            { temp: 25,  kg: 5 },  
+            { temp: 120, kg: 15 },
+            { temp: 245, kg: 27 },
+            { temp: 360, kg: 40 },
+            { temp: 540, kg: 60 },
+            { temp: 700, kg: 80 }
+        ];
+
         function getOvenConsumption(temp) {
-            if (temp < 120) return 15;
-            if (temp < 245) return 27;
-            if (temp < 360) return 40;
-            if (temp < 540) return 60;
-            return 80;
+            for (let i = 0; i < ovenConsPoints.length - 1; i++) {
+                let p1 = ovenConsPoints[i];
+                let p2 = ovenConsPoints[i+1];
+                if (temp >= p1.temp && temp <= p2.temp) {
+                    return p1.kg + (temp - p1.temp) * (p2.kg - p1.kg) / (p2.temp - p1.temp);
+                }
+            }
+            if (temp > 700) return 80;
+            return 5;
         }
 
         const curvePhases = [
@@ -195,42 +277,134 @@
                     } else {
                         temp = phase.endTemp;
                     }
-                    return { temp: temp, phase: phase.name };
+                    return { temp: temp, phase: phase.name, type: phase.type };
                 }
                 temp = phase.endTemp;
                 timeAcc += phase.duration;
             }
-            return { temp: 700, phase: "Operação" };
+            return { temp: 700, phase: "Operação", type: 'hold' };
         }
 
-        // --- DADOS REAIS ---
-        const rawDataIndividual = [
-            { time: '2025-11-26T19:00:00', tq1: 33, tq2: 30, tq3: 40 }, 
-            { time: '2025-11-26T22:00:00', tq1: 32, tq2: 29, tq3: 38 }, 
-            { time: '2025-11-27T00:00:00', tq1: 85, tq2: 85, tq3: 85 }, 
-            { time: '2025-11-27T05:00:00', tq1: 61, tq2: 75, tq3: 83 },
-            { time: '2025-11-27T10:00:00', tq1: 61, tq2: 69, tq3: 82 } // Último ponto incluído
-        ];
+        // --- LÓGICA DE DADOS & CALIBRAÇÃO ---
+        function recalculateModel() {
+            rawData.sort((a, b) => new Date(a.time) - new Date(b.time));
 
-        const realHistory = rawDataIndividual.map(point => {
-            let mass = ((point.tq1 + point.tq2 + point.tq3) / 300) * TOTAL_CAPACITY;
-            let pct = (mass / TOTAL_CAPACITY) * 100;
-            return { time: point.time, ts: new Date(point.time).getTime(), pct: pct, mass: mass };
-        });
+            realHistory = rawData.map(point => {
+                let mass = ((point.tq1 + point.tq2 + point.tq3) / 300) * TOTAL_CAPACITY;
+                let pct = (mass / TOTAL_CAPACITY) * 100;
+                return { 
+                    time: point.time, 
+                    ts: new Date(point.time).getTime(), 
+                    pct: pct, 
+                    mass: mass,
+                    isRefill: point.isRefill,
+                    raw: point
+                };
+            });
 
-        // Pontos de Calibração
-        const pStartRefill = realHistory.find(p => p.time === '2025-11-27T00:00:00');
-        // USANDO O ÚLTIMO PONTO DISPONÍVEL (10:00) para calibração completa
-        const pEndRefill = realHistory[realHistory.length - 1]; 
-        const pLastReal = pEndRefill; 
+            pLastReal = realHistory[realHistory.length - 1];
 
-        // CALIBRAÇÃO (Usando 00h-10h completo)
-        let calHours = (pEndRefill.ts - pStartRefill.ts) / 3600000;
-        let calMassConsumed = pStartRefill.mass - pEndRefill.mass;
-        let calRate = calMassConsumed / calHours; // Média de 10 horas
-        
-        const OVEN_INITIAL_KG_H = 15; 
-        const BASE_LOAD_KG_H = Math.max(0, calRate - OVEN_INITIAL_KG_H);
+            // Ultimo refill para projeção
+            let foundRefill = null;
+            for(let i = realHistory.length-1; i >= 0; i--) {
+                if(realHistory[i].isRefill) { foundRefill = realHistory[i]; break; }
+            }
+            // Se não tiver marcado, tenta usar o primeiro ponto como fallback
+            lastRefillTimestamp = foundRefill ? foundRefill.ts : realHistory[0].ts;
+
+            // Integração de Consumo
+            let totalWeightedBaseLoad = 0;
+            let totalDurationHours = 0;
+
+            for (let i = 0; i < realHistory.length - 1; i++) {
+                let pCurrent = realHistory[i];
+                let pNext = realHistory[i+1];
+                if (pNext.isRefill) continue;
+
+                let hours = (pNext.ts - pCurrent.ts) / 3600000;
+                let massDiff = pCurrent.mass - pNext.mass; 
+
+                if (massDiff > 0 && hours > 0) {
+                    let realRate = massDiff / hours; 
+                    let midTime = (pCurrent.ts + pNext.ts) / 2;
+                    let state = getCurveState(midTime);
+                    let theoreticalOven = getOvenConsumption(state.temp);
+                    let intervalBaseLoad = Math.max(0, realRate - theoreticalOven);
+
+                    totalWeightedBaseLoad += intervalBaseLoad * hours;
+                    totalDurationHours += hours;
+                }
+            }
+
+            if (totalDurationHours > 0) {
+                BASE_LOAD_KG_H = totalWeightedBaseLoad / totalDurationHours;
+            } else {
+                BASE_LOAD_KG_H = 0; 
+            }
+        }
+
+        // --- GERENCIAMENTO DA TABELA ---
+        function renderEditableTable() {
+            const tbody = document.getElementById('editable-table-body');
+            tbody.innerHTML = '';
+            
+            rawData.forEach((row, index) => {
+                let avgPct = Math.round((row.tq1+row.tq2+row.tq3)/3);
+                let totalKg = Math.round(((row.tq1+row.tq2+row.tq3)/300)*TOTAL_CAPACITY);
+                const isChecked = row.isRefill ? 'checked' : '';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2">
+                        <input type="datetime-local" value="${row.time}" onchange="updateRow(${index}, 'time', this.value)" class="text-xs border rounded p-1 w-full bg-gray-50 focus:bg-white outline-none">
+                    </td>
+                    <td class="px-2 py-2">
+                        <input type="number" min="0" max="100" value="${row.tq1}" onchange="updateRow(${index}, 'tq1', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                    </td>
+                    <td class="px-2 py-2">
+                        <input type="number" min="0" max="100" value="${row.tq2}" onchange="updateRow(${index}, 'tq2', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                    </td>
+                    <td class="px-2 py-2">
+                        <input type="number" min="0" max="100" value="${row.tq3}" onchange="updateRow(${index}, 'tq3', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                    </td>
+                    <td class="px-4 py-2 text-right font-mono text-gray-600 text-xs">
+                        ${totalKg} kg
+                    </td>
+                    <td class="px-2 py-2 text-center">
+                        <input type="checkbox" ${isChecked} onchange="updateRow(${index}, 'isRefill', this.checked)" class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500 cursor-pointer">
+                    </td>
+                    <td class="px-2 py-2 text-center">
+                        <button onclick="removeRow(${index})" class="text-red-400 hover:text-red-700 text-xs font-bold">×</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        window.updateRow = function(index, field, value) {
+            if (field === 'time') { rawData[index][field] = value; } 
+            else if (field === 'isRefill') { rawData[index][field] = value; }
+            else { rawData[index][field] = parseFloat(value); }
+        };
+
+        window.addRow = function() {
+            const last = rawData[rawData.length-1];
+            let newTime = new Date(new Date(last.time).getTime() + 3600000);
+            let timeStr = newTime.toISOString().slice(0,16);
+            rawData.push({ time: timeStr, tq1: last.tq1, tq2: last.tq2, tq3: last.tq3, isRefill: false });
+            renderEditableTable();
+        };
+
+        window.removeRow = function(index) {
+            if(rawData.length > 1) { rawData.splice(index, 1); renderEditableTable(); } 
+            else { alert("Mínimo 1 ponto necessário."); }
+        };
+
+        window.updateModel = function() {
+            recalculateModel();
+            renderEditableTable(); 
+            runSimulation();
+        };
 
         // --- UI HANDLERS ---
         const toggleEl = document.getElementById('auto-refill-toggle');
@@ -247,16 +421,8 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const pct = Math.round((val - 1) * 100);
-            const signal = pct > 0 ? "+" : "";
-            const text = pct === 0 ? "Normal (100%)" : `${signal}${pct}% de Carga`;
-            
-            const display = document.getElementById('consumption-display');
-            if(pct > 0) display.className = "text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
-            else if (pct < 0) display.className = "text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
-            else display.className = "text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200";
-            
-            display.innerText = text;
+            const text = val + "%";
+            document.getElementById('consumption-display').innerText = text;
             runSimulation();
         });
 
@@ -278,10 +444,18 @@
         function runSimulation() {
             const isAutoRefill = toggleEl.checked;
             const refillIntervalMs = parseInt(sliderInterval.value) * 3600000;
-            const consumptionFactor = parseFloat(sliderConsumption.value);
+            const consumptionPercentInput = parseFloat(sliderConsumption.value); // ex: 115
+            const totalFactor = consumptionPercentInput / 100; // 1.15
             const isKg = currentUnit === 'kg';
 
-            const series = { real: [], projected: [], temp: [], markers: [] };
+            // Dataset único para projeção contínua
+            const series = { 
+                real: [], 
+                projected: [], // Única linha
+                temp: [], 
+                markers: [], 
+                refillMarkers: []
+            };
             const stepMs = 10 * 60000;
 
             // 1. Temp Background
@@ -289,7 +463,7 @@
                 series.temp.push({ x: t, y: getCurveState(t).temp });
             }
 
-            // 2. Dados Reais (Dense Interpolação para hover)
+            // 2. Dados Reais
             for(let i=0; i<realHistory.length-1; i++) {
                 let start = realHistory[i];
                 let end = realHistory[i+1];
@@ -298,92 +472,101 @@
                 for(let k=0; k<=steps; k++) { 
                     let t = start.ts + (k*stepMs);
                     let progress = k/steps;
-                    let pctVal = start.pct + (end.pct - start.pct) * progress;
-                    let massVal = start.mass + (end.mass - start.mass) * progress;
-                    if(t >= bakeStartMs) {
-                        series.real.push({ x: t, y: isKg ? massVal : pctVal });
-                    }
+                    let val = isKg ? 
+                        start.mass + (end.mass - start.mass) * progress :
+                        start.pct + (end.pct - start.pct) * progress;
+                    
+                    if(t >= bakeStartMs) series.real.push({ x: t, y: val });
                 }
             }
 
-            // 3. Marcadores (Bolinhas)
+            // 3. Marcadores
             realHistory.forEach(pt => {
                 if(pt.ts >= bakeStartMs) {
-                    series.markers.push({ x: pt.ts, y: isKg ? pt.mass : pt.pct });
+                    let val = isKg ? pt.mass : pt.pct;
+                    if (pt.isRefill) { series.refillMarkers.push({ x: pt.ts, y: val }); } 
+                    else { series.markers.push({ x: pt.ts, y: val }); }
                 }
             });
 
-            // 4. Projeção
+            // 4. Projeção Contínua
+            if (!pLastReal) return;
             let simTime = pLastReal.ts;
             let currentMass = pLastReal.mass;
-            let lastRefillTime = pStartRefill.ts; 
-
-            series.projected.push({ x: simTime, y: isKg ? currentMass : pLastReal.pct });
-
+            let lastRefillTime = lastRefillTimestamp;
             let failureDate = null;
+
+            // Ponto inicial
+            series.projected.push({ x: simTime, y: isKg ? currentMass : pLastReal.pct });
 
             while(simTime < simEndMs) {
                 // Abastecimento
                 if(isAutoRefill && (simTime - lastRefillTime) >= refillIntervalMs) {
                     let preVal = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
                     series.projected.push({ x: simTime, y: preVal });
+                    
                     currentMass = (REFILL_LEVEL_PERCENT/100) * TOTAL_CAPACITY;
                     let postVal = isKg ? currentMass : REFILL_LEVEL_PERCENT;
                     series.projected.push({ x: simTime, y: postVal });
+                    
                     lastRefillTime = simTime;
                 }
 
                 simTime += stepMs;
-                
                 let state = getCurveState(simTime);
                 let ovenLoad = getOvenConsumption(state.temp);
-                let totalLoad = (BASE_LOAD_KG_H + ovenLoad) * SAFETY_MARGIN_FACTOR * consumptionFactor;
+                let totalLoad = (BASE_LOAD_KG_H + ovenLoad) * totalFactor;
                 
-                currentMass -= totalLoad * (10/60); // 10 min step
+                currentMass -= totalLoad * (10/60); 
 
                 if(currentMass <= (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY) {
                     currentMass = (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY;
                     if(!failureDate) failureDate = new Date(simTime);
                 }
 
-                series.projected.push({ x: simTime, y: isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100 });
+                let val = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
+                series.projected.push({ x: simTime, y: val, phase: state.phase });
 
                 if(failureDate && !isAutoRefill && simTime > failureDate.getTime() + (12*3600000)) break;
             }
 
             updateChart(series, pLastReal.ts, isKg);
-            updateStatus(failureDate, consumptionFactor, isAutoRefill, simTime);
+            updateStatus(failureDate, totalFactor, isAutoRefill, simTime);
         }
 
-        function updateStatus(failureDate, factor, isAutoRefill, finalTime) {
+        function updateStatus(failureDate, combinedFactor, isAutoRefill, finalTime) {
             let now = Date.now(); if(now < bakeStartMs) now = bakeStartMs;
             let state = getCurveState(now);
             let oven = getOvenConsumption(state.temp);
-            let total = (BASE_LOAD_KG_H + oven) * SAFETY_MARGIN_FACTOR * factor;
+            let total = (BASE_LOAD_KG_H + oven) * combinedFactor;
 
-            document.getElementById('base-load').innerText = BASE_LOAD_KG_H.toFixed(0) + " kg/h";
-            document.getElementById('oven-load').innerText = oven + " kg/h";
-            document.getElementById('total-load').innerText = total.toFixed(0) + " kg/h";
-            document.getElementById('phase-name').innerText = state.phase;
-            document.getElementById('oven-temp').innerText = Math.round(state.temp) + "°C";
+            const elBase = document.getElementById('base-load');
+            const elOven = document.getElementById('oven-load'); 
+            const elTemp = document.getElementById('eq-temp'); 
+            const elFactor = document.getElementById('eq-factor');
+            const elBaseEq = document.getElementById('eq-base');
+            const elPhase = document.getElementById('phase-name');
+            const elOvenTemp = document.getElementById('oven-temp');
+            const elTotalLoad = document.getElementById('total-load');
 
-            let badge = document.getElementById('badge-factor');
-            let pctAdj = Math.round((factor - 1) * 100);
-            badge.innerText = (pctAdj > 0 ? "+" : "") + pctAdj + "% MARGEM";
-            badge.className = pctAdj > 0 ? "absolute top-0 right-0 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-bl" : "absolute top-0 right-0 bg-green-100 text-green-600 text-[10px] font-bold px-2 py-1 rounded-bl";
+            if(elBase) elBase.innerText = BASE_LOAD_KG_H.toFixed(0);
+            if(elBaseEq) elBaseEq.innerText = BASE_LOAD_KG_H.toFixed(0);
+            if(elOven) elOven.innerText = oven.toFixed(0);
+            if(elTemp) elTemp.innerText = Math.round(state.temp);
+            if(elFactor) elFactor.innerText = (combinedFactor*100).toFixed(0);
+            
+            if(elPhase) elPhase.innerText = state.phase;
+            if(elOvenTemp) elOvenTemp.innerText = Math.round(state.temp) + "°C";
+            if(elTotalLoad) elTotalLoad.innerText = total.toFixed(0) + " kg/h";
 
             let statusTxt = document.getElementById('system-end-status');
-            let statusPn = document.getElementById('status-panel');
-            
-            if(failureDate) {
+            if(failureDate && statusTxt) {
                 let d = failureDate;
                 statusTxt.innerText = `COLAPSO: ${d.getDate()}/${d.getMonth()+1} às ${d.getHours()}:00`;
                 statusTxt.className = "text-xl font-bold text-red-700";
-                statusPn.className = "mt-4 md:mt-0 px-4 py-2 rounded-lg bg-red-100 border border-red-200 text-right";
-            } else {
+            } else if (statusTxt) {
                 statusTxt.innerText = isAutoRefill ? "OPERAÇÃO ESTÁVEL" : "OK > 120h";
                 statusTxt.className = "text-xl font-bold text-green-700";
-                statusPn.className = "mt-4 md:mt-0 px-4 py-2 rounded-lg bg-green-100 border border-green-200 text-right";
             }
         }
 
@@ -401,7 +584,7 @@
                         {
                             label: 'Temp Forno', data: series.temp,
                             borderColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 0,
-                            backgroundColor: 'rgba(239, 68, 68, 0.05)', fill: true, pointRadius: 0, yAxisID: 'yTemp', order: 4
+                            backgroundColor: 'rgba(239, 68, 68, 0.05)', fill: true, pointRadius: 0, yAxisID: 'yTemp', order: 10
                         },
                         {
                             label: 'Histórico', data: series.real,
@@ -409,12 +592,17 @@
                             pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0, order: 2
                         },
                         {
-                            label: 'Leituras', data: series.markers,
-                            borderColor: '#1e40af', backgroundColor: 'white', borderWidth: 2, pointRadius: 6,
+                            label: 'Leitura Normal', data: series.markers,
+                            borderColor: '#1e40af', backgroundColor: 'white', borderWidth: 2, pointRadius: 5,
                             showLine: false, yAxisID: 'yLevel', order: 1
                         },
                         {
-                            label: 'Projeção', data: series.projected,
+                            label: 'Abastecimento', data: series.refillMarkers,
+                            borderColor: '#166534', backgroundColor: '#22c55e', borderWidth: 2, pointRadius: 8, pointStyle: 'rectRot',
+                            showLine: false, yAxisID: 'yLevel', order: 0
+                        },
+                        {
+                            label: 'Projeção Unificada', data: series.projected,
                             borderColor: '#4f46e5', borderDash: [5, 5], borderWidth: 2,
                             pointRadius: 0, pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0.1, order: 3
                         }
@@ -425,8 +613,8 @@
                     interaction: { mode: 'nearest', axis: 'x', intersect: false },
                     scales: {
                         x: { type: 'time', min: bakeStartMs, max: simEndMs, time: { unit: 'day', displayFormats: { day: 'dd/MM' } } },
-                        yLevel: { type: 'linear', position: 'left', min: 0, max: yMax, title: { display: true, text: isKg ? 'Massa (kg)' : 'Nível (%)' } },
-                        yTemp: { type: 'linear', position: 'right', min: 0, max: 800, grid: { drawOnChartArea: false } }
+                        yLevel: { type: 'linear', position: 'left', min: 0, max: yMax, title: { display: true, text: isKg ? 'Estoque (kg)' : 'Nível (%)' } },
+                        yTemp: { type: 'linear', position: 'right', min: 0, max: 800, grid: { drawOnChartArea: false }, title: {display:true, text:'Temp (°C)'} }
                     },
                     plugins: {
                         annotation: {
@@ -434,12 +622,26 @@
                                 line: { type: 'line', xMin: transitionTs, xMax: transitionTs, borderColor: 'gray', borderWidth: 2, borderDash: [2,2] },
                                 crit: { type: 'line', yMin: critVal, yMax: critVal, yScaleID: 'yLevel', borderColor: 'red', borderWidth: 1 }
                             }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    if (ctx.dataset.yAxisID === 'yTemp') return `Temp: ${Math.round(ctx.parsed.y)}°C`;
+                                    if (ctx.parsed.y === null) return null;
+                                    let val = Math.round(ctx.parsed.y);
+                                    let extra = ctx.raw.phase ? ` (${ctx.raw.phase})` : '';
+                                    return `${ctx.dataset.label}: ${val}${isKg ? 'kg' : '%'}${extra}`;
+                                }
+                            }
                         }
                     }
                 }
             });
         }
 
+        // Init
+        recalculateModel();
+        renderEditableTable();
         runSimulation();
     </script>
 </body>
