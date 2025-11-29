@@ -73,14 +73,14 @@
             <div class="bg-purple-50 border border-purple-100 p-4 rounded-lg flex flex-col gap-2">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-sm font-bold text-purple-900"><i class="fas fa-tachometer-alt mr-1"></i> Fator de Carga Total</span>
-                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">115%</span>
+                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">+15%</span>
                 </div>
                 <!-- Slider de 80% a 150% -->
                 <input type="range" id="consumption-factor" min="80" max="150" value="115" step="5" class="w-full h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
                 <div class="flex justify-between text-[10px] text-purple-600 font-semibold px-1">
-                    <span>80% (Otimista)</span>
-                    <span>115% (Padrão)</span>
-                    <span>150% (Crítico)</span>
+                    <span>-20% (Otimista)</span>
+                    <span>0% (Padrão)</span>
+                    <span>+50% (Crítico)</span>
                 </div>
             </div>
 
@@ -423,9 +423,16 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const pct = Math.round((val - 1) * 100);
-            const text = pct === 0 ? "Normal (100%)" : `${pct > 0 ? "+" : ""}${pct}%`;
-            document.getElementById('consumption-display').innerText = text;
+            const valFrom100 = val - 100;
+            const signal = valFrom100 > 0 ? "+" : "";
+            const text = valFrom100 === 0 ? "Normal (0%)" : `${signal}${valFrom100}%`;
+            
+            const display = document.getElementById('consumption-display');
+            if(valFrom100 > 0) display.className = "text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
+            else if (valFrom100 < 0) display.className = "text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
+            else display.className = "text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200";
+            
+            display.innerText = text;
             runSimulation();
         });
 
