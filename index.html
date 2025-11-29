@@ -32,22 +32,6 @@
             </div>
         </div>
 
-        <!-- Painel de Equação -->
-        <div class="mb-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-calculator text-slate-400"></i>
-                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
-                <span>Total(t) = [</span>
-                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
-                <span>+</span>
-                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
-                <span>] ×</span>
-                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
-            </div>
-        </div>
-
         <!-- Controles -->
         <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
@@ -183,6 +167,22 @@
                         <!-- JS Populated -->
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Painel de Equação (Movido para baixo) -->
+        <div class="mt-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-calculator text-slate-400"></i>
+                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
+                <span>Total(t) = [</span>
+                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
+                <span>+</span>
+                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
+                <span>] ×</span>
+                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
             </div>
         </div>
 
