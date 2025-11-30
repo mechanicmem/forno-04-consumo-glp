@@ -22,13 +22,29 @@
                     Projeção Contínua de Nível Tanque GLP (3x4.000kg = 12.000kg)
                 </p>
                 <p class="text-gray-500 text-sm mt-1">
-                    Dados atualizados até <span class="font-bold text-blue-600">29/11 14:00</span>.
+                    Dados atualizados até <span class="font-bold text-blue-600">29/11 18:00 (Novo Abastecimento)</span>.
                 </p>
             </div>
             
             <div id="status-panel" class="mt-4 md:mt-0 px-4 py-2 rounded-lg bg-gray-100 text-right">
                 <div class="text-xs text-gray-500 uppercase font-semibold">Status Final (120h)</div>
                 <div id="system-end-status" class="text-xl font-bold text-gray-700">Calculando...</div>
+            </div>
+        </div>
+
+        <!-- Painel de Equação -->
+        <div class="mb-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-calculator text-slate-400"></i>
+                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
+                <span>Total(t) = [</span>
+                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
+                <span>+</span>
+                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
+                <span>] ×</span>
+                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
             </div>
         </div>
 
@@ -57,14 +73,14 @@
             <div class="bg-purple-50 border border-purple-100 p-4 rounded-lg flex flex-col gap-2">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-sm font-bold text-purple-900"><i class="fas fa-tachometer-alt mr-1"></i> Fator de Carga Total</span>
-                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">+15%</span>
+                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">115%</span>
                 </div>
                 <!-- Slider de 80% a 150% -->
                 <input type="range" id="consumption-factor" min="80" max="150" value="115" step="5" class="w-full h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
                 <div class="flex justify-between text-[10px] text-purple-600 font-semibold px-1">
-                    <span>-20% (Otimista)</span>
-                    <span>0% (Padrão)</span>
-                    <span>+50% (Crítico)</span>
+                    <span>80% (Otimista)</span>
+                    <span>115% (Padrão)</span>
+                    <span>150% (Crítico)</span>
                 </div>
             </div>
 
@@ -123,8 +139,12 @@
                         <span>Histórico Real</span>
                     </div>
                     <div class="flex items-center gap-2">
+                        <div class="w-4 h-0.5 bg-blue-500 border-t border-dashed"></div>
+                        <span>Projeção Passada (Pontilhado)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
                         <div class="w-4 h-0.5 bg-indigo-500 border-t border-dashed"></div>
-                        <span>Projeção (Consumo Variável)</span>
+                        <span>Projeção Futura (Pontilhado)</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="w-2 h-2 rounded-full bg-green-500"></div>
@@ -154,7 +174,7 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50 text-xs text-gray-500 uppercase sticky top-0 z-10 shadow-sm">
                         <tr>
-                            <th class="px-4 py-2 text-left">Data/Hora</th>
+                            <th class="px-4 py-2 text-left">Data/Hora (24h)</th>
                             <th class="px-2 py-2 text-center w-24">TQ1 (%)</th>
                             <th class="px-2 py-2 text-center w-24">TQ2 (%)</th>
                             <th class="px-2 py-2 text-center w-24">TQ3 (%)</th>
@@ -215,8 +235,9 @@
             { time: '2025-11-28T03:00', tq1: 56, tq2: 54, tq3: 67, isRefill: false },
             { time: '2025-11-28T09:00', tq1: 85, tq2: 85, tq3: 85, isRefill: true },
             { time: '2025-11-28T15:00', tq1: 76, tq2: 80, tq3: 85, isRefill: false },
-            // NOVO DADO
-            { time: '2025-11-29T14:00', tq1: 56, tq2: 52, tq3: 80, isRefill: false }
+            { time: '2025-11-29T14:00', tq1: 56, tq2: 52, tq3: 80, isRefill: false },
+            // NOVO DADO:
+            { time: '2025-11-29T18:00', tq1: 85, tq2: 85, tq3: 85, isRefill: true }
         ];
 
         let realHistory = [];
@@ -229,6 +250,27 @@
         const bakeStartMs = new Date(BAKE_START_STR).getTime();
         const SIMULATION_DURATION_HOURS = 125; 
         const simEndMs = bakeStartMs + (SIMULATION_DURATION_HOURS * 3600000);
+
+        // --- HELPERS DE FORMATAÇÃO ---
+        function isoToDisplay(iso) {
+            if (!iso) return "";
+            try {
+                const [date, time] = iso.split('T');
+                const [y, m, d] = date.split('-');
+                return `${d}/${m}/${y} ${time}`;
+            } catch (e) { return iso; }
+        }
+
+        function displayToIso(display) {
+            try {
+                const [datePart, timePart] = display.split(' ');
+                const [d, m, y] = datePart.split('/');
+                if (d && m && y && timePart) {
+                    return `${y}-${m}-${d}T${timePart}`;
+                }
+            } catch(e) {}
+            return display; 
+        }
 
         // --- MODELO FÍSICO COM INTERPOLAÇÃO ---
         const ovenConsPoints = [
@@ -354,11 +396,12 @@
                 let avgPct = Math.round((row.tq1+row.tq2+row.tq3)/3);
                 let totalKg = Math.round(((row.tq1+row.tq2+row.tq3)/300)*TOTAL_CAPACITY);
                 const isChecked = row.isRefill ? 'checked' : '';
+                const displayTime = isoToDisplay(row.time);
                 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="px-4 py-2">
-                        <input type="datetime-local" value="${row.time}" onchange="updateRow(${index}, 'time', this.value)" class="text-xs border rounded p-1 w-full bg-gray-50 focus:bg-white outline-none">
+                        <input type="text" value="${displayTime}" onchange="updateRow(${index}, 'time', this.value)" class="text-xs border rounded p-1 w-full bg-gray-50 focus:bg-white outline-none font-mono placeholder-gray-300" placeholder="DD/MM/AAAA HH:MM">
                     </td>
                     <td class="px-2 py-2">
                         <input type="number" min="0" max="100" value="${row.tq1}" onchange="updateRow(${index}, 'tq1', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
@@ -384,7 +427,9 @@
         }
 
         window.updateRow = function(index, field, value) {
-            if (field === 'time') { rawData[index][field] = value; } 
+            if (field === 'time') { 
+                rawData[index][field] = displayToIso(value); 
+            } 
             else if (field === 'isRefill') { rawData[index][field] = value; }
             else { rawData[index][field] = parseFloat(value); }
         };
@@ -392,7 +437,7 @@
         window.addRow = function() {
             const last = rawData[rawData.length-1];
             let newTime = new Date(new Date(last.time).getTime() + 3600000);
-            let timeStr = newTime.toISOString().slice(0,16);
+            let timeStr = newTime.toISOString().slice(0,16); // ISO
             rawData.push({ time: timeStr, tq1: last.tq1, tq2: last.tq2, tq3: last.tq3, isRefill: false });
             renderEditableTable();
         };
@@ -423,16 +468,9 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const valFrom100 = val - 100;
-            const signal = valFrom100 > 0 ? "+" : "";
-            const text = valFrom100 === 0 ? "Normal (0%)" : `${signal}${valFrom100}%`;
-            
-            const display = document.getElementById('consumption-display');
-            if(valFrom100 > 0) display.className = "text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
-            else if (valFrom100 < 0) display.className = "text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
-            else display.className = "text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200";
-            
-            display.innerText = text;
+            const pct = Math.round((val - 1) * 100);
+            const text = pct === 0 ? "Normal (100%)" : `${pct > 0 ? "+" : ""}${pct}%`;
+            document.getElementById('consumption-display').innerText = text;
             runSimulation();
         });
 
@@ -464,7 +502,8 @@
                 projected: [], // Única linha
                 temp: [], 
                 markers: [], 
-                refillMarkers: []
+                refillMarkers: [],
+                simulatedDrops: [] // Quedas simuladas pontilhadas
             };
             const stepMs = 10 * 60000;
 
@@ -473,20 +512,70 @@
                 series.temp.push({ x: t, y: getCurveState(t).temp });
             }
 
-            // 2. Dados Reais
+            // 2. Dados Reais & Simulação de Queda Pré-Refill
             for(let i=0; i<realHistory.length-1; i++) {
                 let start = realHistory[i];
                 let end = realHistory[i+1];
-                let diff = end.ts - start.ts;
-                let steps = Math.floor(diff / stepMs);
-                for(let k=0; k<=steps; k++) { 
-                    let t = start.ts + (k*stepMs);
-                    let progress = k/steps;
-                    let val = isKg ? 
-                        start.mass + (end.mass - start.mass) * progress :
-                        start.pct + (end.pct - start.pct) * progress;
+                
+                if (end.isRefill) {
+                    // MODO: Queda Simulada (Histórico Pontilhado)
+                    let currMass = start.mass;
+                    let currTime = start.ts;
                     
-                    if(t >= bakeStartMs) series.real.push({ x: t, y: val });
+                    // Conecta com a linha sólida anterior
+                    if(currTime >= bakeStartMs) {
+                         let val = isKg ? currMass : (currMass/TOTAL_CAPACITY)*100;
+                         series.real.push({ x: currTime, y: val }); // Fim da sólida
+                         series.real.push({ x: currTime, y: null }); // Quebra da sólida
+                         series.simulatedDrops.push({ x: currTime, y: val }); // Início da pontilhada
+                    }
+
+                    while(currTime < end.ts) {
+                        currTime += stepMs;
+                        if(currTime > end.ts) currTime = end.ts;
+
+                        let state = getCurveState(currTime);
+                        let oven = getOvenConsumption(state.temp);
+                        // Carga base + Forno (Sem fator para passado)
+                        let drop = (BASE_LOAD_KG_H + oven) * (10/60);
+                        currMass -= drop;
+
+                        if(currTime >= bakeStartMs) {
+                             let val = isKg ? currMass : (currMass/TOTAL_CAPACITY)*100;
+                             series.simulatedDrops.push({ x: currTime, y: val });
+                        }
+                    }
+                    
+                    // Agora no momento do abastecimento (end.ts)
+                    // 1. Adiciona o ponto BAIXO na pontilhada
+                    let lowVal = isKg ? currMass : (currMass/TOTAL_CAPACITY)*100;
+                    series.simulatedDrops.push({ x: end.ts, y: lowVal });
+                    
+                    // 2. Adiciona o ponto ALTO na pontilhada para criar a linha vertical
+                    let highVal = isKg ? end.mass : end.pct;
+                    series.simulatedDrops.push({ x: end.ts, y: highVal });
+                    
+                    // 3. Quebra a linha pontilhada
+                    series.simulatedDrops.push({ x: end.ts, y: null });
+
+                    // 4. Retoma a linha sólida no ponto ALTO
+                    if(end.ts >= bakeStartMs) {
+                        series.real.push({ x: end.ts, y: highVal });
+                    }
+
+                } else {
+                    // MODO: Interpolação Linear (Sólido)
+                    let diff = end.ts - start.ts;
+                    let steps = Math.floor(diff / stepMs);
+                    for(let k=0; k<=steps; k++) { 
+                        let t = start.ts + (k*stepMs);
+                        let progress = k/steps;
+                        let val = isKg ? 
+                            start.mass + (end.mass - start.mass) * progress :
+                            start.pct + (end.pct - start.pct) * progress;
+                        
+                        if(t >= bakeStartMs) series.real.push({ x: t, y: val });
+                    }
                 }
             }
 
@@ -499,26 +588,28 @@
                 }
             });
 
-            // 4. Projeção Contínua
+            // 4. Projeção Contínua (Tension 0 para verticais retas)
             if (!pLastReal) return;
             let simTime = pLastReal.ts;
             let currentMass = pLastReal.mass;
             let lastRefillTime = lastRefillTimestamp;
             let failureDate = null;
 
-            // Ponto inicial
-            series.projected.push({ x: simTime, y: isKg ? currentMass : pLastReal.pct });
+            // Ponto inicial da projeção
+            let startVal = isKg ? currentMass : pLastReal.pct;
+            series.projected.push({ x: simTime, y: startVal });
 
             while(simTime < simEndMs) {
-                // Abastecimento
+                // Abastecimento Futuro (Cria degrau vertical)
                 if(isAutoRefill && (simTime - lastRefillTime) >= refillIntervalMs) {
                     let preVal = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
                     series.projected.push({ x: simTime, y: preVal });
                     
+                    // Enche
                     currentMass = (REFILL_LEVEL_PERCENT/100) * TOTAL_CAPACITY;
                     let postVal = isKg ? currentMass : REFILL_LEVEL_PERCENT;
-                    series.projected.push({ x: simTime, y: postVal });
                     
+                    series.projected.push({ x: simTime, y: postVal });
                     lastRefillTime = simTime;
                 }
 
@@ -535,7 +626,7 @@
                 }
 
                 let val = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
-                series.projected.push({ x: simTime, y: val, phase: state.phase });
+                series.projected.push({ x: simTime, y: val }); 
 
                 if(failureDate && !isAutoRefill && simTime > failureDate.getTime() + (12*3600000)) break;
             }
@@ -570,13 +661,21 @@
             if(elTotalLoad) elTotalLoad.innerText = total.toFixed(0) + " kg/h";
 
             let statusTxt = document.getElementById('system-end-status');
-            if(failureDate && statusTxt) {
+            let statusPn = document.getElementById('status-panel');
+            
+            if(failureDate) {
                 let d = failureDate;
-                statusTxt.innerText = `COLAPSO: ${d.getDate()}/${d.getMonth()+1} às ${d.getHours()}:00`;
-                statusTxt.className = "text-xl font-bold text-red-700";
-            } else if (statusTxt) {
-                statusTxt.innerText = isAutoRefill ? "OPERAÇÃO ESTÁVEL" : "OK > 120h";
-                statusTxt.className = "text-xl font-bold text-green-700";
+                if(statusTxt) {
+                    statusTxt.innerText = `COLAPSO: ${d.getDate()}/${d.getMonth()+1} às ${d.getHours()}:00`;
+                    statusTxt.className = "text-xl font-bold text-red-700";
+                }
+                if(statusPn) statusPn.className = "mt-4 md:mt-0 px-4 py-2 rounded-lg bg-red-100 border border-red-200 text-right";
+            } else {
+                if(statusTxt) {
+                    statusTxt.innerText = isAutoRefill ? "OPERAÇÃO ESTÁVEL" : "OK > 120h";
+                    statusTxt.className = "text-xl font-bold text-green-700";
+                }
+                if(statusPn) statusPn.className = "mt-4 md:mt-0 px-4 py-2 rounded-lg bg-green-100 border border-green-200 text-right";
             }
         }
 
@@ -597,9 +696,14 @@
                             backgroundColor: 'rgba(239, 68, 68, 0.05)', fill: true, pointRadius: 0, yAxisID: 'yTemp', order: 10
                         },
                         {
-                            label: 'Histórico', data: series.real,
+                            label: 'Histórico Real', data: series.real,
                             borderColor: '#2563eb', borderWidth: 3, pointRadius: 0,
-                            pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0, order: 2
+                            pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0, order: 2, spanGaps: false
+                        },
+                        {
+                            label: 'Histórico Estimado', data: series.simulatedDrops,
+                            borderColor: '#3b82f6', borderDash: [5, 5], borderWidth: 2,
+                            pointRadius: 0, yAxisID: 'yLevel', tension: 0, order: 3, spanGaps: false
                         },
                         {
                             label: 'Leitura Normal', data: series.markers,
@@ -612,9 +716,9 @@
                             showLine: false, yAxisID: 'yLevel', order: 0
                         },
                         {
-                            label: 'Projeção Unificada', data: series.projected,
+                            label: 'Projeção Futura', data: series.projected,
                             borderColor: '#4f46e5', borderDash: [5, 5], borderWidth: 2,
-                            pointRadius: 0, pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0.1, order: 3
+                            pointRadius: 0, pointHoverRadius: 4, yAxisID: 'yLevel', tension: 0, order: 4, spanGaps: false
                         }
                     ]
                 },
@@ -622,7 +726,7 @@
                     responsive: true, maintainAspectRatio: false,
                     interaction: { mode: 'nearest', axis: 'x', intersect: false },
                     scales: {
-                        x: { type: 'time', min: bakeStartMs, max: simEndMs, time: { unit: 'day', displayFormats: { day: 'dd/MM' } } },
+                        x: { type: 'time', min: bakeStartMs, max: simEndMs, time: { unit: 'day', displayFormats: { day: 'dd/MM' }, tooltipFormat: 'dd/MM/yyyy HH:mm' } },
                         yLevel: { type: 'linear', position: 'left', min: 0, max: yMax, title: { display: true, text: isKg ? 'Estoque (kg)' : 'Nível (%)' } },
                         yTemp: { type: 'linear', position: 'right', min: 0, max: 800, grid: { drawOnChartArea: false }, title: {display:true, text:'Temp (°C)'} }
                     },
