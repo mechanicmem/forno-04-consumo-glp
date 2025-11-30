@@ -32,6 +32,22 @@
             </div>
         </div>
 
+        <!-- Painel de Equação -->
+        <div class="mb-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-calculator text-slate-400"></i>
+                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
+                <span>Total(t) = [</span>
+                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
+                <span>+</span>
+                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
+                <span>] ×</span>
+                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
+            </div>
+        </div>
+
         <!-- Controles -->
         <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
@@ -57,14 +73,14 @@
             <div class="bg-purple-50 border border-purple-100 p-4 rounded-lg flex flex-col gap-2">
                 <div class="flex items-center justify-between mb-1">
                     <span class="text-sm font-bold text-purple-900"><i class="fas fa-tachometer-alt mr-1"></i> Fator de Carga Total</span>
-                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">115%</span>
+                    <span id="consumption-display" class="text-xs font-bold text-white bg-purple-600 px-2 py-1 rounded shadow-sm">+15%</span>
                 </div>
                 <!-- Slider de 80% a 150% -->
                 <input type="range" id="consumption-factor" min="80" max="150" value="115" step="5" class="w-full h-1 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
                 <div class="flex justify-between text-[10px] text-purple-600 font-semibold px-1">
-                    <span>80% (Otimista)</span>
-                    <span>115% (Padrão)</span>
-                    <span>150% (Crítico)</span>
+                    <span>-20% (Otimista)</span>
+                    <span>0% (Padrão)</span>
+                    <span>+50% (Crítico)</span>
                 </div>
             </div>
 
@@ -456,9 +472,16 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const pct = Math.round((val - 1) * 100);
-            const text = pct === 0 ? "Normal (100%)" : `${pct > 0 ? "+" : ""}${pct}%`;
-            document.getElementById('consumption-display').innerText = text;
+            const pctFrom100 = Math.round(val - 100);
+            const signal = pctFrom100 > 0 ? "+" : "";
+            const text = pctFrom100 === 0 ? "Normal (0%)" : `${signal}${pctFrom100}%`;
+            
+            const display = document.getElementById('consumption-display');
+            if(pctFrom100 > 0) display.className = "text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
+            else if (pctFrom100 < 0) display.className = "text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
+            else display.className = "text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200";
+            
+            display.innerText = text;
             runSimulation();
         });
 
@@ -758,24 +781,22 @@
                         if(!failureDate) failureDate = new Date(simTime);
                     }
                     let val = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
-                    series.projected.push({ x: simTime, y: val });
+                    series.projected.push({ x: simTime, y: val }); 
                 } else {
-                    // Distribute drop
-                    let totalM = m1 + m2 + m3;
-                    if(totalM > 0) {
-                        m1 -= drop * (m1/totalM);
-                        m2 -= drop * (m2/totalM);
-                        m3 -= drop * (m3/totalM);
-                    }
-                    
-                    // Check limit (assuming total system safety)
-                    if((m1+m2+m3) <= (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY) {
-                         if(!failureDate) failureDate = new Date(simTime);
-                    }
-                    
-                    series.proj1.push({x: simTime, y: isKg ? m1 : (m1/TANK_CAPACITY_SINGLE)*100});
-                    series.proj2.push({x: simTime, y: isKg ? m2 : (m2/TANK_CAPACITY_SINGLE)*100});
-                    series.proj3.push({x: simTime, y: isKg ? m3 : (m3/TANK_CAPACITY_SINGLE)*100});
+                     let totalM = m1 + m2 + m3;
+                     if(totalM > 0) {
+                         m1 -= drop * (m1/totalM);
+                         m2 -= drop * (m2/totalM);
+                         m3 -= drop * (m3/totalM);
+                     }
+                     // Check limit (assuming total system safety)
+                     if((m1+m2+m3) <= (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY) {
+                          if(!failureDate) failureDate = new Date(simTime);
+                     }
+                     
+                     series.proj1.push({ x: simTime, y: isKg ? m1 : (m1/TANK_CAPACITY_SINGLE)*100 });
+                     series.proj2.push({ x: simTime, y: isKg ? m2 : (m2/TANK_CAPACITY_SINGLE)*100 });
+                     series.proj3.push({ x: simTime, y: isKg ? m3 : (m3/TANK_CAPACITY_SINGLE)*100 });
                 }
 
                 if(failureDate && !isAutoRefill && simTime > failureDate.getTime() + (12*3600000)) break;
