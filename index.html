@@ -403,13 +403,13 @@
                         <input type="text" value="${displayTime}" onchange="updateRow(${index}, 'time', this.value)" class="text-xs border rounded p-1 w-full bg-gray-50 focus:bg-white outline-none font-mono placeholder-gray-300" placeholder="DD/MM/AAAA HH:MM">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" min="0" max="100" value="${row.tq1}" onchange="updateRow(${index}, 'tq1', this.value)" class="text-xs text-center font-bold text-blue-600 border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                        <input type="number" min="0" max="100" value="${row.tq1}" onchange="updateRow(${index}, 'tq1', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" min="0" max="100" value="${row.tq2}" onchange="updateRow(${index}, 'tq2', this.value)" class="text-xs text-center font-bold text-orange-600 border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                        <input type="number" min="0" max="100" value="${row.tq2}" onchange="updateRow(${index}, 'tq2', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
                     </td>
                     <td class="px-2 py-2">
-                        <input type="number" min="0" max="100" value="${row.tq3}" onchange="updateRow(${index}, 'tq3', this.value)" class="text-xs text-center font-bold text-teal-600 border rounded p-1 w-full bg-gray-50 focus:bg-white">
+                        <input type="number" min="0" max="100" value="${row.tq3}" onchange="updateRow(${index}, 'tq3', this.value)" class="text-xs text-center border rounded p-1 w-full bg-gray-50 focus:bg-white">
                     </td>
                     <td class="px-4 py-2 text-right font-mono text-gray-600 text-xs">
                         ${totalKg} kg
@@ -467,9 +467,16 @@
         
         sliderConsumption.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
-            const pct = Math.round((val - 1) * 100);
-            const text = pct === 0 ? "Normal (100%)" : `${pct > 0 ? "+" : ""}${pct}%`;
-            document.getElementById('consumption-display').innerText = text;
+            const pctFrom100 = Math.round(val - 100);
+            const signal = pctFrom100 > 0 ? "+" : "";
+            const text = pctFrom100 === 0 ? "Normal (0%)" : `${signal}${pctFrom100}%`;
+            
+            const display = document.getElementById('consumption-display');
+            if(pctFrom100 > 0) display.className = "text-xs font-bold text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200";
+            else if (pctFrom100 < 0) display.className = "text-xs font-bold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200";
+            else display.className = "text-xs font-bold text-orange-700 bg-white px-2 py-1 rounded border border-orange-200";
+            
+            display.innerText = text;
             runSimulation();
         });
 
@@ -491,8 +498,8 @@
         function runSimulation() {
             const isAutoRefill = toggleEl.checked;
             const refillIntervalMs = parseInt(sliderInterval.value) * 3600000;
-            const consumptionPercentInput = parseFloat(sliderConsumption.value); // ex: 115
-            const totalFactor = consumptionPercentInput / 100; // 1.15
+            const consumptionPercentInput = parseFloat(sliderConsumption.value); 
+            const totalFactor = consumptionPercentInput / 100; 
             const isKg = currentUnit === 'kg';
 
             // Dataset único para projeção contínua
