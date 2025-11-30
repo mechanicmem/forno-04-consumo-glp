@@ -32,22 +32,6 @@
             </div>
         </div>
 
-        <!-- Painel de Equação -->
-        <div class="mb-6 bg-slate-50 border border-slate-200 p-3 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-sm font-mono text-slate-700">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-calculator text-slate-400"></i>
-                <span class="font-bold uppercase text-xs text-slate-500">Cálculo Instantâneo:</span>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 bg-white px-3 py-1 rounded border border-slate-200 shadow-sm text-xs md:text-sm">
-                <span>Total(t) = [</span>
-                <span class="text-blue-600 font-bold" title="Carga Base Fixa">Base(<span id="eq-base">--</span>)</span>
-                <span>+</span>
-                <span class="text-orange-600 font-bold" title="Consumo Variável do Forno">Forno(<span id="eq-temp">--</span>°C)</span>
-                <span>] ×</span>
-                <span class="text-purple-600 font-bold" title="Fator Total Definido no Slider">Fator(<span id="eq-factor">--</span>%)</span>
-            </div>
-        </div>
-
         <!-- Controles -->
         <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
@@ -446,7 +430,7 @@
 
         window.removeRow = function(index) {
             if(rawData.length > 1) { rawData.splice(index, 1); renderEditableTable(); } 
-            else { alert("Mínimo 1 ponto necessário."); }
+            else { console.warn("Mínimo 1 ponto necessário."); }
         };
 
         window.updateModel = function() {
@@ -587,12 +571,12 @@
                              series.real.push({ x: currTime, y: null });
                              // Start dotted line
                              series.simulatedDrops.push({ x: currTime, y: val });
-                         } else {
+                          } else {
                              // Break solids
                              let v1 = isKg ? m1 : start.raw.tq1; series.real1.push({x:currTime, y:v1}); series.real1.push({x:currTime, y:null}); series.simDrops1.push({x:currTime, y:v1});
                              let v2 = isKg ? m2 : start.raw.tq2; series.real2.push({x:currTime, y:v2}); series.real2.push({x:currTime, y:null}); series.simDrops2.push({x:currTime, y:v2});
                              let v3 = isKg ? m3 : start.raw.tq3; series.real3.push({x:currTime, y:v3}); series.real3.push({x:currTime, y:null}); series.simDrops3.push({x:currTime, y:v3});
-                         }
+                          }
                     }
 
                     while(currTime < end.ts) {
@@ -783,20 +767,20 @@
                     let val = isKg ? currentMass : (currentMass/TOTAL_CAPACITY)*100;
                     series.projected.push({ x: simTime, y: val }); 
                 } else {
-                     let totalM = m1 + m2 + m3;
-                     if(totalM > 0) {
-                         m1 -= drop * (m1/totalM);
-                         m2 -= drop * (m2/totalM);
-                         m3 -= drop * (m3/totalM);
-                     }
-                     // Check limit (assuming total system safety)
-                     if((m1+m2+m3) <= (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY) {
-                          if(!failureDate) failureDate = new Date(simTime);
-                     }
-                     
-                     series.proj1.push({ x: simTime, y: isKg ? m1 : (m1/TANK_CAPACITY_SINGLE)*100 });
-                     series.proj2.push({ x: simTime, y: isKg ? m2 : (m2/TANK_CAPACITY_SINGLE)*100 });
-                     series.proj3.push({ x: simTime, y: isKg ? m3 : (m3/TANK_CAPACITY_SINGLE)*100 });
+                      let totalM = m1 + m2 + m3;
+                      if(totalM > 0) {
+                          m1 -= drop * (m1/totalM);
+                          m2 -= drop * (m2/totalM);
+                          m3 -= drop * (m3/totalM);
+                      }
+                      // Check limit (assuming total system safety)
+                      if((m1+m2+m3) <= (SAFETY_LIMIT_PERCENT/100)*TOTAL_CAPACITY) {
+                           if(!failureDate) failureDate = new Date(simTime);
+                      }
+                      
+                      series.proj1.push({ x: simTime, y: isKg ? m1 : (m1/TANK_CAPACITY_SINGLE)*100 });
+                      series.proj2.push({ x: simTime, y: isKg ? m2 : (m2/TANK_CAPACITY_SINGLE)*100 });
+                      series.proj3.push({ x: simTime, y: isKg ? m3 : (m3/TANK_CAPACITY_SINGLE)*100 });
                 }
 
                 if(failureDate && !isAutoRefill && simTime > failureDate.getTime() + (12*3600000)) break;
@@ -822,6 +806,7 @@
              const elFactor = document.getElementById('eq-factor');
              
              const elOvenTemp = document.getElementById('oven-temp');
+             const elEqTemp = document.getElementById('eq-temp'); // NEW
              const elTotalLoad = document.getElementById('total-load');
              const elPhase = document.getElementById('phase-name');
 
@@ -831,6 +816,7 @@
              
              if(elPhase) elPhase.innerText = state.phase;
              if(elOvenTemp) elOvenTemp.innerText = Math.round(state.temp) + "°C";
+             if(elEqTemp) elEqTemp.innerText = Math.round(state.temp);
              if(elTotalLoad) elTotalLoad.innerText = total.toFixed(0) + " kg/h";
              
              // ... other updates ...
